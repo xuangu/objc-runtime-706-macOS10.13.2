@@ -66,13 +66,23 @@ typedef struct _AspectBlock {
 @end
 
 @interface AspectTracker : NSObject
+// 一个AspectTracker对应对应一个被hook的类，所有的被hook的类通过对应的AspectTracker对象放到一个全局的aspect_getSwizzledClassesDict()静态方法返回的dic中
 - (id)initWithTrackedClass:(Class)trackedClass;
+
+// 该对象track的class object
 @property (nonatomic, strong) Class trackedClass;
+
 @property (nonatomic, readonly) NSString *trackedClassName;
+
+// selectorNames对应着某个类中被hook的方法的set
 @property (nonatomic, strong) NSMutableSet *selectorNames;
-// {"selectorName" : (NSMutiableSet<AspectTracker *> *)subclassTrackers}
+
+// {"selectorName" : (NSMutiableSet<AspectTracker *> *)subclassTrackers}，该selectorNamesToSubclassTrackers字典以一个被hook的方法的方法名为key，以hook该方法的本类track的class object的继承链中的子类的tracker对象的set为value。所以通过传递给该属性一个被hook的方法名即可知道本实例track的class object是否已经有其某个子类hook了该同名方法
 @property (nonatomic, strong) NSMutableDictionary *selectorNamesToSubclassTrackers;
+
+// 将subclassTracker对象加入到selectorName对应的subclassTrackers set中
 - (void)addSubclassTracker:(AspectTracker *)subclassTracker hookingSelectorName:(NSString *)selectorName;
+
 - (void)removeSubclassTracker:(AspectTracker *)subclassTracker hookingSelectorName:(NSString *)selectorName;
 - (BOOL)subclassHasHookedSelectorName:(NSString *)selectorName;
 - (NSSet *)subclassTrackersHookingSelectorName:(NSString *)selectorName;
@@ -705,6 +715,7 @@ static void aspect_deregisterTrackedSelector(id self, SEL selector) {
         [self.selectorNamesToSubclassTrackers removeObjectForKey:selectorName];
     }
 }
+
 - (NSSet *)subclassTrackersHookingSelectorName:(NSString *)selectorName {
     NSMutableSet *hookingSubclassTrackers = [NSMutableSet new];
     for (AspectTracker *tracker in self.selectorNamesToSubclassTrackers[selectorName]) {
@@ -715,6 +726,7 @@ static void aspect_deregisterTrackedSelector(id self, SEL selector) {
     }
     return hookingSubclassTrackers;
 }
+
 - (NSString *)trackedClassName {
     return NSStringFromClass(self.trackedClass);
 }
